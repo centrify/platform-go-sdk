@@ -1,0 +1,7 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Repo Issues
+  
+  - name: Bugcrowd Centrify Bounty
+    url: https://bugcrowd.com/centrify
+    about: Please report security vulnerabilities here.

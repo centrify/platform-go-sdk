@@ -1,0 +1,86 @@
+name: build-platform-station
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+
+jobs:
+
+  build:
+    name: build-platform-station
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04, ubuntu-latest, self-hosted]
+        
+    runs-on: ${{ matrix.os }}
+    steps:
+
+      - name: Checkout Platform sdk
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16.6
+
+      - name: Setup
+        run: |
+          go mod download
+          go install gotest.tools/gotestsum@latest
+
+      - name: Test
+        run: |
+          gotestsum -f testname ./... >> platform-go-sdk.txt
+
+      - name: Test output
+        if: ${{ always() }}
+        run: |
+          cat platform-go-sdk.txt
+
+      - name: Slack Notification
+        if: ${{ always() }}
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          job_name: build-platform-station
+          fields: workflow
+          mention: here
+          if_mention: failure,cancelled
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          MATRIX_CONTEXT: ${{ toJson(matrix) }}
+
+      - name: Extract branch name
+        if: ${{ always() && github.ref == 'refs/heads/master' }}
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+
+      - name: Send mail
+        if: ${{ always() && github.ref == 'refs/heads/master' }}
+        uses: dawidd6/action-send-mail@v2
+        with:
+          server_address: ${{secrets.SMTP_SERVER}}
+          server_port: 587
+          username: ${{secrets.MAIL_USERNAME}}
+          password: ${{secrets.MAIL_PASSWORD}}
+          subject: Build job of ${{github.repository}} completed - ${{ job.status }}!
+          body: |
+            Build job of ${{github.repository}} on ${{ matrix.os }} completed - ${{ job.status }}
+            Action was run on branch - ${{ steps.extract_branch.outputs.branch }}
+            Link to the workflow - https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+          to: ${{secrets.MAIL_TOLIST}}
+          from: GitHub@platform-go-sdk
+          attachments: platform-go-sdk.txt

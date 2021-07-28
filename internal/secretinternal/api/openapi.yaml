@@ -1,0 +1,954 @@
+openapi: 3.0.3
+info:
+  contact:
+    email: support@centrify.com
+    name: Centrify
+    url: https://github.com/centrify/centrify-openapi/Centrify-Vault-API-public.yaml
+  description: |
+    Vault REST API specification
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0
+  title: Centrify Vault REST API
+  version: "1.0"
+servers:
+- url: https://{tenantHost}/api/{basePath}
+  variables:
+    tenantHost:
+      default: api.my.centrify.net
+      description: The host name of your Centrify tenant
+    basePath:
+      default: v1.0
+      description: The version of the API
+tags:
+- description: Centrify Vault Secrets
+  name: Secrets
+paths:
+  /privilegeddata/secrets/{nameOrId}:
+    get:
+      description: |
+        Retrieves the privileged data stored in the secret.
+
+        ## Required Roles
+        - TODO
+
+        ## Required ACLs
+        - retrieve
+        - read
+      operationId: secrets_retrieve
+      parameters:
+      - description: The name or id of a secret. Note a name can be a path, and contained
+          / characters should not be url encoded.
+        examples:
+          nameWithPath:
+            summary: A name of a secret in a folder as the parameter
+            value: passwords/mine
+          name:
+            summary: A name as the parameter
+            value: my_password
+          id:
+            summary: An id as the parameter
+            value: b47cd113-6cb9-47e2-93ec-85115680ae4e
+        explode: false
+        in: path
+        name: nameOrId
+        required: true
+        schema:
+          $ref: '#/components/schemas/name'
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivilegedData'
+          description: |
+            A dictionary of representing a secret `text` or `bag` secret.
+
+            `folder` type secrets do not have privileged data to retrieve.
+      security:
+      - OAuth2:
+        - privilegeddata/secrets/*
+        - privilegeddata/*
+      summary: Retrieve privileged data
+      tags:
+      - Secrets
+  /secrets/{nameOrId}:
+    delete:
+      description: |
+        Deletes a secret from the vault.
+      operationId: secrets_delete
+      parameters:
+      - description: The name or id of a secret. Note a name can be a path, and contained
+          / characters should not be url encoded.
+        examples:
+          nameWithPath:
+            summary: A name as the parameter
+            value: passwords/mine
+          name:
+            summary: A name as the parameter
+            value: my_password
+          id:
+            summary: An id as the parameter
+            value: b47cd113-6cb9-47e2-93ec-85115680ae4e
+        explode: false
+        in: path
+        name: nameOrId
+        required: true
+        schema:
+          $ref: '#/components/schemas/name'
+        style: simple
+      responses:
+        "201":
+          description: No response
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+          description: Error
+      security:
+      - OAuth2:
+        - secrets/*
+      summary: Delete a secret
+      tags:
+      - Secrets
+    get:
+      description: |
+        Gets a secret depending on the `{name}` path parameter.
+        Does not include privileged data, see `/privilegeddata/secrets/{nameOrId}` path to retrieve privileged data.
+        If {name} is the name of a folder of secrets, the results will only contain items that are direct descendants of the folder.
+      operationId: secrets_get
+      parameters:
+      - description: The name or id of a secret. Note a name can be a path, and contained
+          / characters should not be url encoded.
+        examples:
+          nameWithPath:
+            summary: A name as the parameter
+            value: passwords/mine
+          name:
+            summary: A name as the parameter
+            value: my_password
+          id:
+            summary: An id as the parameter
+            value: b47cd113-6cb9-47e2-93ec-85115680ae4e
+        explode: false
+        in: path
+        name: nameOrId
+        required: true
+        schema:
+          $ref: '#/components/schemas/name'
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecretDense'
+          description: |
+            A dictionary representing a `text`, `bag` or `folder` secret.
+
+            For `folder` type secrets, each entry in the items array is a separate
+            secret contained within the folder. The items array is flat, and will not
+            returns items for any folder within the current folder.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+          description: Error
+      summary: Get secrets
+      tags:
+      - Secrets
+    patch:
+      description: |
+        Modify a secret.
+
+        Currently supports modifying a secret's privileged data.
+
+        Note for a `bag` type secret, data is modified in its entirety.
+      operationId: secrets_modify
+      parameters:
+      - description: The name or id of a secret. Note a name can be a path, and contained
+          / characters should not be url encoded.
+        examples:
+          nameWithPath:
+            summary: A name as the parameter
+            value: passwords/mine
+          name:
+            summary: A name as the parameter
+            value: my_password
+          id:
+            summary: An id as the parameter
+            value: b47cd113-6cb9-47e2-93ec-85115680ae4e
+        explode: false
+        in: path
+        name: nameOrId
+        required: true
+        schema:
+          $ref: '#/components/schemas/name'
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            examples:
+              Text:
+                summary: Modifying a text secret
+                value:
+                  type: text
+                  data: my_secret
+              KeyValue:
+                summary: Modifying a bag secret
+                value:
+                  type: text
+                  data:
+                    k1: secret1
+                    k2: secret2
+            schema:
+              $ref: '#/components/schemas/SecretPatchable'
+        description: A modify operation will update only the properties included in
+          the request body. The request body for a text and bag secret can differ.
+          See examples.
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecretDense'
+          description: |
+            A dictionary representing a `text`, `bag` or `folder` secret.
+
+            For `folder` type secrets, each entry in the items array is a separate
+            secret contained within the folder. The items array is flat, and will not
+            returns items for any folder within the current folder.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+          description: Error
+      security:
+      - OAuth2:
+        - secrets
+      summary: Modify a secret
+      tags:
+      - Secrets
+  /secrets:
+    get:
+      description: |
+        Returns a list of sparse secrets.
+
+        Optionally use the limit, orderBy, filter or search parameters to control the results.
+
+        `Note` all responses are paged by default. The response contains a `previous_url` and `next_url` to access the next or previous page of the list.
+      operationId: secrets-list
+      parameters:
+      - description: How many results to return.
+        examples:
+          five:
+            summary: Five items in list
+            value: 5
+          id:
+            summary: 100 items in list
+            value: 100
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 10
+          example: 10
+          maximum: 100
+          minimum: 1
+          type: integer
+        style: form
+      - description: |
+          A comma separated list of properties to sort by.
+        explode: false
+        in: query
+        name: orderBy
+        required: false
+        schema:
+          items:
+            description: |
+              A property of the objects in a list. If the value of orderBy is an invalid property, a 422 invalid parameter error will be returned.
+              The expression MAY include the suffix "asc" for ascending or "desc" for descending, separated from the property name by one or more spaces.
+              If "asc" or "desc" is not specified, ascending will be used.
+            example: name desc
+            type: string
+          minLength: 1
+          nullable: false
+          type: array
+        style: form
+      - description: |
+          Provide search text to use default search capabilities.
+
+          For more advanced filtering capabilities, use the filter parameter.
+        explode: true
+        in: query
+        name: search
+        required: false
+        schema:
+          example: john
+          minLength: 1
+          nullable: false
+          type: string
+        style: form
+      - description: Conditional filtering of a list
+        examples:
+          ActiveCheckouts:
+            summary: Servers with active checkouts
+            value: activeCheckouts gt 0
+          UnixServers:
+            summary: Servers with a type of unix
+            value: type eq unix
+        explode: true
+        in: query
+        name: filter
+        required: false
+        schema:
+          description: |
+            A filter expression for a list. The syntax of a filter expression may contain the following logical operators:
+
+            Operator             | Description           | Example
+            -------------------- | --------------------- | -----------------------------------------------------
+            Comparison Operators |                       |
+            eq                   | Equal                 | type eq 'unix'
+            ne                   | Not equal             | type ne 'unix'
+            gt                   | Greater than          | activeCheckouts gt 0
+            ge                   | Greater than or equal | activeCheckouts ge 1
+            lt                   | Less than             | activeCheckouts lt 2
+            le                   | Less than or equal    | activeCheckouts le 1
+            Logical Operators    |                       |
+            and                  | Logical and           | type eq 'unix' and activeCheckouts gt 0
+            or                   | Logical or            | type eq 'unix' and activeCheckouts gt 0
+            not                  | Logical negation      | not type eq 'unix'
+            Grouping Operators   |                       |
+            ( )                  | Precedence grouping   | (type eq 'unix' and activeCheckouts gt 0) and managed eq true
+          minLength: 1
+          nullable: false
+          type: string
+        style: form
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecretList'
+          description: |
+            A standard list representation containing `secret` with a sparse list of attributes, tuned for performance.
+      summary: List secrets
+      tags:
+      - Secrets
+      x-centrify-granting-role-options:
+      - System Administrator
+      x-centrify-mandatory-role-options:
+      - System Administrator
+      x-centrify-required-acls:
+      - read
+    post:
+      description: |
+        Creates a secret
+      operationId: secrets-create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecretWritable'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecretDense'
+          description: |
+            A dictionary representing a `text`, `bag` or `folder` secret.
+
+            For `folder` type secrets, each entry in the items array is a separate
+            secret contained within the folder. The items array is flat, and will not
+            returns items for any folder within the current folder.
+      security:
+      - OAuth2:
+        - secrets
+      summary: Create a secret
+      tags:
+      - Secrets
+      x-centrify-granting-role-options:
+      - System Administrator
+      x-centrify-mandatory-role-options:
+      - System Administrator
+      x-centrify-required-acls:
+      - write
+components:
+  parameters:
+    limit:
+      description: How many results to return.
+      examples:
+        five:
+          summary: Five items in list
+          value: 5
+        id:
+          summary: 100 items in list
+          value: 100
+      explode: true
+      in: query
+      name: limit
+      required: false
+      schema:
+        default: 10
+        example: 10
+        maximum: 100
+        minimum: 1
+        type: integer
+      style: form
+    order_by:
+      description: |
+        A comma separated list of properties to sort by.
+      explode: false
+      in: query
+      name: orderBy
+      required: false
+      schema:
+        items:
+          description: |
+            A property of the objects in a list. If the value of orderBy is an invalid property, a 422 invalid parameter error will be returned.
+            The expression MAY include the suffix "asc" for ascending or "desc" for descending, separated from the property name by one or more spaces.
+            If "asc" or "desc" is not specified, ascending will be used.
+          example: name desc
+          type: string
+        minLength: 1
+        nullable: false
+        type: array
+      style: form
+    search:
+      description: |
+        Provide search text to use default search capabilities.
+
+        For more advanced filtering capabilities, use the filter parameter.
+      explode: true
+      in: query
+      name: search
+      required: false
+      schema:
+        example: john
+        minLength: 1
+        nullable: false
+        type: string
+      style: form
+    filter:
+      description: Conditional filtering of a list
+      examples:
+        ActiveCheckouts:
+          summary: Servers with active checkouts
+          value: activeCheckouts gt 0
+        UnixServers:
+          summary: Servers with a type of unix
+          value: type eq unix
+      explode: true
+      in: query
+      name: filter
+      required: false
+      schema:
+        description: |
+          A filter expression for a list. The syntax of a filter expression may contain the following logical operators:
+
+          Operator             | Description           | Example
+          -------------------- | --------------------- | -----------------------------------------------------
+          Comparison Operators |                       |
+          eq                   | Equal                 | type eq 'unix'
+          ne                   | Not equal             | type ne 'unix'
+          gt                   | Greater than          | activeCheckouts gt 0
+          ge                   | Greater than or equal | activeCheckouts ge 1
+          lt                   | Less than             | activeCheckouts lt 2
+          le                   | Less than or equal    | activeCheckouts le 1
+          Logical Operators    |                       |
+          and                  | Logical and           | type eq 'unix' and activeCheckouts gt 0
+          or                   | Logical or            | type eq 'unix' and activeCheckouts gt 0
+          not                  | Logical negation      | not type eq 'unix'
+          Grouping Operators   |                       |
+          ( )                  | Precedence grouping   | (type eq 'unix' and activeCheckouts gt 0) and managed eq true
+        minLength: 1
+        nullable: false
+        type: string
+      style: form
+  responses:
+    retrieve:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PrivilegedData'
+      description: |
+        A dictionary of representing a secret `text` or `bag` secret.
+
+        `folder` type secrets do not have privileged data to retrieve.
+    error:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+      description: Error
+    secret:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SecretDense'
+      description: |
+        A dictionary representing a `text`, `bag` or `folder` secret.
+
+        For `folder` type secrets, each entry in the items array is a separate
+        secret contained within the folder. The items array is flat, and will not
+        returns items for any folder within the current folder.
+    deleted:
+      description: No response
+    secrets:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SecretList'
+      description: |
+        A standard list representation containing `secret` with a sparse list of attributes, tuned for performance.
+  schemas:
+    name:
+      description: Names of secrets may contain a alphanumeric characters separated
+        by / to indicate folder membership. Vaulting a bag or text secret within folders
+        will implicitely create the folders.
+      example: passwords/my_password
+      minLength: 1
+      nullable: false
+      pattern: '[a-zA-Z0-9 /]+'
+      type: string
+      x-immutable: true
+    PrivilegedTextData:
+      allOf:
+      - $ref: '#/components/schemas/PrivilegedData'
+      - $ref: '#/components/schemas/PrivilegedTextData_allOf'
+      discriminator:
+        mapping:
+          text: '#/components/schemas/PrivilegedTextData'
+        propertyName: type
+      required:
+      - data
+      - type
+      title: Privileged Bag Data
+      type: object
+    PrivilegedData:
+      discriminator:
+        mapping:
+          text: '#/components/schemas/PrivilegedTextData'
+          keyvalue: '#/components/schemas/PrivilegedBagData'
+        propertyName: type
+      example:
+        type: text
+      properties:
+        type:
+          $ref: '#/components/schemas/secrettypes'
+      required:
+      - type
+      title: PrivilegedData
+      type: object
+      x-tags:
+      - Secrets
+    textdata:
+      description: The privileged data in a text secret. Required for vault and modify
+        operations.
+      example: xxxxxxx
+      maxLength: 5000
+      minLength: 0
+      type: string
+    PrivilegedBagData:
+      allOf:
+      - $ref: '#/components/schemas/PrivilegedData'
+      - $ref: '#/components/schemas/PrivilegedBagData_allOf'
+      discriminator:
+        mapping:
+          keyvalue: '#/components/schemas/PrivilegedBagData'
+        propertyName: type
+      required:
+      - data
+      - type
+      title: Privileged Bag Data
+      type: object
+    bagdata:
+      additionalProperties:
+        type: string
+      description: The privileged data in a secret bag. Required for vault and modify
+        operations.
+      example:
+        key1: vxxxx
+        key2: vyyyy
+        key3: vzzzz
+      type: object
+      x-immutable: false
+    secrettypes:
+      description: Secret type is immutable. After initially vaulting a secret its
+        type cannot be changed.
+      enum:
+      - text
+      - keyvalue
+      - folder
+      example: text
+      nullable: false
+      type: string
+      x-immutable: true
+    failure_status_code:
+      description: |
+        A conventional HTTP status code:
+          * 401 - Authorization error with your API key or account
+          * 403 - Forbidden error with your API key or account
+          * 404 - The requested item does not exist
+          * 413 - Payload too large
+          * 422 - The query or body parameters did not pass validation
+          * 429 - Too many requests in a given amount of time
+          * 500 - An internal server error occurred, please contact support@centrify.com
+      enum:
+      - 401
+      - 403
+      - 404
+      - 413
+      - 422
+      - 429
+      - 500
+      example: 429
+      format: int32
+      type: integer
+    error:
+      description: Centrify uses RESTful HTTP response codes to indicate success or
+        failure of an API request. In general, 2xx indicates success, 4xx indicate
+        an input error, and 5xx indicates an error on Centrify's end.
+      properties:
+        type:
+          default: about:blank
+          description: |
+            A reference URL which contains more information about the type of error
+          example: https://next.io.developer.centrify.com/errors/input-validation
+          format: uri
+          type: string
+        title:
+          description: |
+            A short, summary of the problem type.
+          example: Service Unavailable
+          type: string
+        status:
+          $ref: '#/components/schemas/failure_status_code'
+        detail:
+          description: |
+            A human readable explanation specific to this occurrence of the problem.
+          example: Connection to database timed out
+          type: string
+        instance:
+          description: |
+            A URI to the requested resource
+          example: /secrets/passwords/my_password
+          type: string
+      required:
+      - message
+      - status
+      type: object
+    SecretTextWritable:
+      allOf:
+      - $ref: '#/components/schemas/SecretWritable'
+      - $ref: '#/components/schemas/SecretTextWritable_allOf'
+      discriminator:
+        mapping:
+          text: '#/components/schemas/SecretTextWritable'
+        propertyName: type
+      required:
+      - name
+      - type
+      title: Secret Text Writable
+      type: object
+      x-tags:
+      - Secrets
+    SecretWritable:
+      discriminator:
+        mapping:
+          text: '#/components/schemas/SecretTextWritable'
+          keyvalue: '#/components/schemas/SecretBagWritable'
+          folder: '#/components/schemas/SecretFolderWritable'
+        propertyName: type
+      example:
+        name: passwords/my_password
+        type: text
+      properties:
+        type:
+          $ref: '#/components/schemas/secrettypes'
+        name:
+          description: Names of secrets may contain a alphanumeric characters separated
+            by / to indicate folder membership. Vaulting a bag or text secret within
+            folders will implicitely create the folders.
+          example: passwords/my_password
+          minLength: 1
+          nullable: false
+          pattern: '[a-zA-Z0-9 /]+'
+          type: string
+          x-immutable: true
+      required:
+      - name
+      - type
+      title: Secret Writable
+      type: object
+      x-tags:
+      - Secrets
+    SecretBagWritable:
+      allOf:
+      - $ref: '#/components/schemas/SecretWritable'
+      - $ref: '#/components/schemas/SecretBagWritable_allOf'
+      description: |
+        Useful model for determining what attributes of a secret bag are writable.
+
+        Note that semantics of POST / PUT / PATCH apply differently.
+      discriminator:
+        mapping:
+          keyvalue: '#/components/schemas/SecretBagWritable'
+        propertyName: type
+      required:
+      - data
+      - type
+      title: Secret Bag Writable
+      type: object
+      x-tags:
+      - Secrets
+    SecretFolderWritable:
+      allOf:
+      - $ref: '#/components/schemas/SecretWritable'
+      discriminator:
+        mapping:
+          folder: '#/components/schemas/SecretFolderWritable'
+        propertyName: type
+      required:
+      - name
+      - type
+      title: Secret Folder Writable
+      type: object
+      x-tags:
+      - Secrets
+    id:
+      description: Unique ID, generated upon creation
+      example: b47cd113-6cb9-47e2-93ec-85115680ae4e
+      format: uuid
+      nullable: false
+      type: string
+    metadata:
+      description: Common metadata for Centrify resources
+      properties:
+        id:
+          description: Unique ID, generated upon creation
+          example: b47cd113-6cb9-47e2-93ec-85115680ae4e
+          format: uuid
+          nullable: false
+          type: string
+        crn:
+          description: Unique global reference, generated upon creation, useful for
+            APIs that operate on multiple types of objects.
+          example: centrify:secrets:mypassword
+          nullable: false
+          type: string
+        created:
+          description: A timestamp in ISO 8601 format of the date the address was
+            created.
+          example: 2017-09-05T17:47:53.767Z
+          format: date-time
+          readOnly: true
+          type: string
+        modified:
+          description: A timestamp in ISO 8601 format of the date the address was
+            last modified.
+          example: 2017-09-05T17:47:53.767Z
+          format: date-time
+          readOnly: true
+          type: string
+      title: Metadata
+      type: object
+    SecretDense:
+      allOf:
+      - $ref: '#/components/schemas/SecretWritable'
+      - $ref: '#/components/schemas/SecretDense_allOf'
+      title: Secret
+      type: object
+      x-tags:
+      - Secrets
+    SecretTextPatchable:
+      allOf:
+      - $ref: '#/components/schemas/SecretPatchable'
+      - $ref: '#/components/schemas/SecretTextWritable_allOf'
+      discriminator:
+        mapping:
+          text: '#/components/schemas/SecretTextPatchable'
+        propertyName: type
+      minProperties: 2
+      required:
+      - data
+      - type
+      title: Secret Text Patchable
+      type: object
+      x-tags:
+      - Secrets
+    SecretPatchable:
+      discriminator:
+        mapping:
+          text: '#/components/schemas/SecretTextPatchable'
+          keyvalue: '#/components/schemas/SecretBagPatchable'
+        propertyName: type
+      example:
+        type: text
+      properties:
+        type:
+          $ref: '#/components/schemas/secrettypes'
+      required:
+      - type
+      title: Secret Patchable
+      type: object
+      x-tags:
+      - Secrets
+    SecretBagPatchable:
+      allOf:
+      - $ref: '#/components/schemas/SecretPatchable'
+      - $ref: '#/components/schemas/SecretBagWritable_allOf'
+      discriminator:
+        mapping:
+          keyvalue: '#/components/schemas/SecretBagPatchable'
+        propertyName: type
+      minProperties: 2
+      required:
+      - data
+      - type
+      title: Secret Bag Patchable
+      type: object
+      x-tags:
+      - Secrets
+    SecretSparse:
+      properties:
+        id:
+          description: Unique ID, generated upon creation
+          example: b47cd113-6cb9-47e2-93ec-85115680ae4e
+          format: uuid
+          nullable: false
+          type: string
+        name:
+          description: Names of secrets may contain a alphanumeric characters separated
+            by / to indicate folder membership. Vaulting a bag or text secret within
+            folders will implicitely create the folders.
+          example: passwords/my_password
+          minLength: 1
+          nullable: false
+          pattern: '[a-zA-Z0-9 /]+'
+          type: string
+          x-immutable: true
+      required:
+      - id
+      - name
+      title: Secret Sparse
+      type: object
+      x-tags:
+      - Secrets
+    list:
+      description: Multiple items returned in order
+      properties:
+        object:
+          description: What kind of resource does this list contain?
+          example: accounts
+          type: string
+        next_url:
+          description: Url of next page of items in list.
+          example: https://api.my.centrify.net/v1/secrets?limit=2&after=eyJkYXRlT2Zmc2V0IjoiMjAxOS0wOC0wN1QyMTo1OTo0Ni43NjRaIiwiaWRPZmZzZXQiOiJhZHJfODMwYmYwZWFiZGFhYTQwOSJ9
+          format: uri
+          nullable: true
+          type: string
+        previous_url:
+          description: Url of previous page of items in list.
+          format: uri
+          nullable: true
+          type: string
+      required:
+      - next_url
+      - object
+      - previous_url
+      type: object
+    SecretList:
+      allOf:
+      - $ref: '#/components/schemas/SecretList_allOf'
+      - $ref: '#/components/schemas/list'
+      title: Secret
+      type: object
+      x-tags:
+      - Secrets
+    PrivilegedTextData_allOf:
+      properties:
+        data:
+          description: The privileged data in a text secret. Required for vault and
+            modify operations.
+          example: xxxxxxx
+          maxLength: 5000
+          minLength: 0
+          type: string
+      type: object
+    PrivilegedBagData_allOf:
+      properties:
+        data:
+          additionalProperties:
+            type: string
+          description: The privileged data in a secret bag. Required for vault and
+            modify operations.
+          example:
+            key1: vxxxx
+            key2: vyyyy
+            key3: vzzzz
+          type: object
+          x-immutable: false
+      type: object
+    SecretTextWritable_allOf:
+      properties:
+        data:
+          description: The privileged data in a text secret. Required for vault and
+            modify operations.
+          example: xxxxxxx
+          maxLength: 5000
+          minLength: 0
+          type: string
+      required:
+      - data
+      type: object
+    SecretBagWritable_allOf:
+      properties:
+        data:
+          additionalProperties:
+            type: string
+          description: The privileged data in a secret bag. Required for vault and
+            modify operations.
+          example:
+            key1: vxxxx
+            key2: vyyyy
+            key3: vzzzz
+          type: object
+          x-immutable: false
+      required:
+      - data
+      type: object
+    SecretDense_allOf:
+      properties:
+        meta:
+          $ref: '#/components/schemas/metadata'
+      required:
+      - meta
+      type: object
+    SecretList_allOf:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/SecretSparse'
+          type: array
+      required:
+      - items
+      type: object
+  securitySchemes:
+    OAuth2:
+      flows:
+        clientCredentials:
+          refreshUrl: https://{tenantHost}/oauth2/token
+          scopes:
+            secrets/*: Read and write secrets
+            privilegeddata/secrets/*: Read secret data
+          tokenUrl: https://{tenantHost}/oauth2/token
+      type: oauth2
