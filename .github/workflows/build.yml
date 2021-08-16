@@ -1,4 +1,4 @@
-name: build-platform-develop
+name: build-platform-go-sdk
 
 on:
   workflow_dispatch:
@@ -18,7 +18,7 @@ on:
 jobs:
 
   build:
-    name: build-platform-develop
+    name: build-platform-go-sdk
     strategy:
       fail-fast: false
       matrix:
@@ -48,39 +48,3 @@ jobs:
         if: ${{ always() }}
         run: |
           cat platform-go-sdk.txt
-
-      - name: Slack Notification
-        if: ${{ always() }}
-        uses: 8398a7/action-slack@v3
-        with:
-          status: ${{ job.status }}
-          job_name: build-platform-develop
-          fields: workflow
-          mention: here
-          if_mention: failure,cancelled
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
-          MATRIX_CONTEXT: ${{ toJson(matrix) }}
-
-      - name: Extract branch name
-        if: ${{ always() && github.ref == 'refs/heads/master' }}
-        shell: bash
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        id: extract_branch
-
-      - name: Send mail
-        if: ${{ always() && github.ref == 'refs/heads/master' }}
-        uses: dawidd6/action-send-mail@v2
-        with:
-          server_address: ${{secrets.SMTP_SERVER}}
-          server_port: 587
-          username: ${{secrets.MAIL_USERNAME}}
-          password: ${{secrets.MAIL_PASSWORD}}
-          subject: Build job of ${{github.repository}} completed - ${{ job.status }}!
-          body: |
-            Build job of ${{github.repository}} on ${{ matrix.os }} completed - ${{ job.status }}
-            Action was run on branch - ${{ steps.extract_branch.outputs.branch }}
-            Link to the workflow - https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-          to: ${{secrets.MAIL_TOLIST}}
-          from: GitHub@platform-go-sdk
-          attachments: platform-go-sdk.txt
