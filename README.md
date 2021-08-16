@@ -1,5 +1,4 @@
-[![build-develop](https://github.com/centrify/platform-go-sdk/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/centrify/platform-go-sdk/actions/workflows/build.yml)
-[![build-station](https://github.com/centrify/platform-go-sdk/actions/workflows/build-station.yml/badge.svg?branch=main)](https://github.com/centrify/platform-go-sdk/actions/workflows/build-station.yml)
+[![build-platform-go-sdk](https://github.com/centrify/platform-go-sdk/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/centrify/platform-go-sdk/actions/workflows/build.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/centrify/platform-go-sdk.svg)](https://pkg.go.dev/github.com/centrify/platform-go-sdk)
 
 # platform-go-sdk
