@@ -1,4 +1,5 @@
-[![Build Status](https://github.com/centrify/platform-go-sdk/workflows/build/badge.svg)](https://github.com/centrify/platform-go-sdk/actions)
+[![build-platform-go-sdk](https://github.com/centrify/platform-go-sdk/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/centrify/platform-go-sdk/actions/workflows/build.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/centrify/platform-go-sdk.svg)](https://pkg.go.dev/github.com/centrify/platform-go-sdk)
 
 # platform-go-sdk
 Public Go packages for using Centrify Platform.
