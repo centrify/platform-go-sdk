@@ -4,6 +4,12 @@
 # platform-go-sdk
 Public Go packages for using Centrify Platform.
 
+# PUBLIC ARCHIVE
+
+> ***NOTE***
+> This repo is archived.
+> This is still available under the licensing terms, but is not being actively developed or updated any further. Please see [DelineaXPM](https://github.com/DelineaXPM) for active projects.
+
 Subdirectories:
 
 - DMC: Allow applications to acquire Delegated Machine Credentials token
